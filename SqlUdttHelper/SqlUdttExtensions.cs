@@ -10,7 +10,17 @@ namespace SqlUdttHelper
     {
         public static IEnumerable<Microsoft.SqlServer.Server.SqlDataRecord> AsSqlDataRecord<T>(this T entity, string mapperName) where T : class
         {
-            return new SqlUdttEnumeratorProvider<T>(entity, mapperName);
+            if ((entity is System.Collections.IEnumerable || entity is System.Collections.ICollection) && entity.GetType().IsGenericType)
+            {
+                throw new NotSupportedException("Most likely you did not mean to call this extension method on a colection. Use the overload that takes type if you are calling on a collection");
+            }
+            else
+                return new SqlUdttEnumeratorProvider<T>(entity, mapperName);
+        }
+
+        public static IEnumerable<Microsoft.SqlServer.Server.SqlDataRecord> AsSqlDataRecord<T>(this ICollection<T> entityList, string mapperName) where T : class
+        {
+            return new SqlUdttEnumeratorProvider<T>(entityList, mapperName);
         }
 
         public static IEnumerable<Microsoft.SqlServer.Server.SqlDataRecord> AsSqlDataRecord<T>(this IEnumerable<T> entityList, string mapperName) where T : class
