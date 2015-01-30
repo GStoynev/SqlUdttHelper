@@ -14,7 +14,7 @@ namespace SqlUdttHelper
 
         private SqlUdttEnumeratorProvider() { /*don't let them use parameterless ctor*/ }
 
-        public SqlUdttEnumeratorProvider(T singleItem, string udtNameToUseForMapping)   
+        public SqlUdttEnumeratorProvider(T singleItem, string udtNameToUseForMapping)
         {
             if (singleItem is System.Collections.ICollection || singleItem is System.Collections.IEnumerable)
                 throw new NotSupportedException("this hsould have resoplved into the other constructor");
@@ -38,7 +38,7 @@ namespace SqlUdttHelper
         public IEnumerator<Microsoft.SqlServer.Server.SqlDataRecord> GetEnumerator()
         {
             Microsoft.SqlServer.Server.SqlDataRecord sdr = GetSqlDataRecordDef();
-            
+
             foreach (T od in _internalList)
             {
                 foreach (var member in GetPropertiesDecoratedWithDbUdtColumnAttribute())
@@ -89,7 +89,7 @@ namespace SqlUdttHelper
                                     break;
                                 case System.Data.SqlDbType.Char:
                                     //var findOffset = 0;
-                                    var buffer =propVal.ToString().ToCharArray();
+                                    var buffer = propVal.ToString().ToCharArray();
                                     //var bufferOffset = 0;
                                     //var length = buffer.Length;
                                     System.Data.SqlTypes.SqlChars val = new System.Data.SqlTypes.SqlChars(buffer);
@@ -106,7 +106,7 @@ namespace SqlUdttHelper
                                     sdr.SetSqlInt32(attr.OrdinalPosition, int.Parse(propVal.ToString()));
                                     break;
                                 case System.Data.SqlDbType.NVarChar:
-                                    sdr.SetSqlString(attr.OrdinalPosition,propVal.ToString());
+                                    sdr.SetSqlString(attr.OrdinalPosition, propVal.ToString());
                                     break;
                                 case System.Data.SqlDbType.SmallInt:
                                     sdr.SetSqlInt16(attr.OrdinalPosition, short.Parse(propVal.ToString()));
@@ -118,7 +118,7 @@ namespace SqlUdttHelper
                                     sdr.SetGuid(attr.OrdinalPosition, Guid.Parse(propVal.ToString()));
                                     break;
                                 case System.Data.SqlDbType.VarChar:
-                                    sdr.SetString(attr.OrdinalPosition,propVal.ToString());
+                                    sdr.SetString(attr.OrdinalPosition, propVal.ToString());
                                     break;
                                 default:
                                     throw new NotImplementedException(string.Format("Feature not implemented for type {0} at SqlUdttHelper:section G325239HF", attr.SqlType));
@@ -137,7 +137,7 @@ namespace SqlUdttHelper
             return this.GetEnumerator();
         }
 
-        public Microsoft.SqlServer.Server.SqlDataRecord GetSqlDataRecordDef() 
+        public Microsoft.SqlServer.Server.SqlDataRecord GetSqlDataRecordDef()
         {
             SortedDictionary<int, SqlMetaData> metaL = new SortedDictionary<int, SqlMetaData>();
             foreach (var property in GetPropertiesDecoratedWithDbUdtColumnAttribute())
@@ -160,7 +160,15 @@ namespace SqlUdttHelper
                             meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType, 1000);
                             break;
                         case System.Data.SqlDbType.Decimal:
-                            meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType, attr.Precision, attr.Scale);
+                            if (attr.Precision.HasValue && attr.Scale.HasValue)
+                            {
+                                meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType, attr.Precision.Value, attr.Scale.Value);
+                            }
+                            else
+                            {
+                                meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType);
+                            }
+
                             break;
                         default:
                             meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType);
@@ -218,9 +226,9 @@ namespace SqlUdttHelper
             //                                  .Where(ca => ((DbUdttColumnAttribute)ca).UDTTName == _udtNameToUseForMapping).Count() > 0);
             List<System.Reflection.MemberInfo> ret = new List<System.Reflection.MemberInfo>();
             var members = typeof(T).GetMembers();
-            foreach(var mi in members)
+            foreach (var mi in members)
             {
-                foreach(Attribute a in Attribute.GetCustomAttributes(mi, typeof(DbUdttColumnAttribute), true))
+                foreach (Attribute a in Attribute.GetCustomAttributes(mi, typeof(DbUdttColumnAttribute), true))
                 {
                     var dbudttA = a as DbUdttColumnAttribute;
                     if (dbudttA != null && dbudttA.UDTTName.Equals(_udtNameToUseForMapping, StringComparison.OrdinalIgnoreCase))
