@@ -160,9 +160,9 @@ namespace SqlUdttHelper
                             meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType, 1000);
                             break;
                         case System.Data.SqlDbType.Decimal:
-                            if (attr.Precision.HasValue && attr.Scale.HasValue)
+                            if (attr.Precision > 0)
                             {
-                                meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType, attr.Precision.Value, attr.Scale.Value);
+                                meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType, attr.Precision, attr.Scale);
                             }
                             else
                             {

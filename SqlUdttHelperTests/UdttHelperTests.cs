@@ -421,16 +421,24 @@ namespace SqlUdttHelperTests
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
-        public void DecimalWithOnlyScale_Throws()
+        public void DecimalWithPrecisionBiggerThanScale_Throws()
         {
-            var arg = new DbUdttColumnAttribute("name", "name2", 0, SqlDbType.Decimal, null, 3);
+            var arg = new DbUdttColumnAttribute("name", "name2", 0, SqlDbType.Decimal, 0, 3);
+        }
+
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void DecimalWithPrecisionSmallerThan1_Throws()
+        {
+            var arg = new DbUdttColumnAttribute("name", "name2", 0, SqlDbType.Decimal, 0, 3);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
-        public void DecimalWithOnlyPrecision_Throws()
+        public void DecimalWithPrecisionBiggerThan38_Throws()
         {
-            var arg = new DbUdttColumnAttribute("name", "name2", 0, SqlDbType.Decimal, 3, null);
+            var arg = new DbUdttColumnAttribute("name", "name2", 0, SqlDbType.Decimal, 39, 3);
         }
 
         [TestMethod]

@@ -25,8 +25,8 @@ namespace SqlUdttHelper
                 throw new NotImplementedException("Not implemented at section 0F38408F");; 
             }
         }
-        public byte? Precision { get; set; }
-        public byte? Scale { get; set; }
+        public byte Precision { get; set; }
+        public byte Scale { get; set; }
 
         private DbUdttColumnAttribute() { }
 
@@ -52,13 +52,18 @@ namespace SqlUdttHelper
         /// <param name="Name"></param>
         /// <param name="OrdinalPosition"></param>
         /// <param name="SqlType"></param>
-        /// <param name="precision">Optional, but always use with <see cref="scale"/></param>
-        /// <param name="scale">Optional, but always use with <see cref="precision"/></param>
-        public DbUdttColumnAttribute(string UDTTName, string Name, int OrdinalPosition, System.Data.SqlDbType SqlType, byte? precision = null, byte? scale = null)
+        /// <param name="precision">Optional, but always use with <see cref="scale"/>; 1 through 38</param>
+        /// <param name="scale">Optional, but always use with <see cref="precision"/>; always smaller than <see cref="precision"/></param>
+        public DbUdttColumnAttribute(string UDTTName, string Name, int OrdinalPosition, System.Data.SqlDbType SqlType, byte Precision, byte Scale)
         {
-            if (precision.HasValue ^ scale.HasValue)
+            if (Precision < 1 || Precision > 38)
             {
-                throw new ArgumentException("precision and scale must either both have values or both be null");
+                throw new ArgumentException("precision must be between 1 and 38");
+            }
+
+            if (!(0 <= Scale && Scale <= Precision))
+            {
+                throw new ArgumentException("0 <= Smust <= Precision");
             }
             this.UDTTName = UDTTName;
             this.Name = Name;
@@ -67,8 +72,8 @@ namespace SqlUdttHelper
             // TODO: implement 
             /// <param name="length">Optional</param>
             //this.Length = length; 
-            this.Precision = precision;
-            this.Scale = scale;
+            this.Precision = Precision;
+            this.Scale = Scale;
         }
 
         // this is so that multiple attributes can be used on same target
