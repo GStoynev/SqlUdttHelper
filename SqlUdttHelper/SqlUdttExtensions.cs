@@ -10,7 +10,17 @@ namespace SqlUdttHelper
     {
         public static IEnumerable<Microsoft.SqlServer.Server.SqlDataRecord> AsSqlDataRecord<T>(this T entity, string mapperName) where T : class
         {
-            return new SqlUdttEnumeratorProvider<T>(entity, mapperName);
+            if ((entity is System.Collections.IEnumerable || entity is System.Collections.ICollection) && entity.GetType().IsGenericType)
+            {
+                throw new NotSupportedException("Most likely you did not mean to call this extension method on a colection. Use the overload that takes type if you are calling on a collection");
+            }
+            else
+                return new SqlUdttEnumeratorProvider<T>(entity, mapperName);
+        }
+
+        public static IEnumerable<Microsoft.SqlServer.Server.SqlDataRecord> AsSqlDataRecord<T>(this ICollection<T> entityList, string mapperName) where T : class
+        {
+            return new SqlUdttEnumeratorProvider<T>(entityList, mapperName);
         }
 
         public static IEnumerable<Microsoft.SqlServer.Server.SqlDataRecord> AsSqlDataRecord<T>(this IEnumerable<T> entityList, string mapperName) where T : class
@@ -66,22 +76,40 @@ namespace SqlUdttHelper
             {
                 Func<object, bool> onlySoughtUdttName = delegate (object ca) 
                 {
-                    return ((DbUdttColumnAttribute)ca).UDTTName == mapperName;
+                    return ((DbUdttColumnAttribute)ca).UDTTName.Equals(mapperName, StringComparison.OrdinalIgnoreCase);
                 };
 
-                foreach (
-                    var property in typeof(T).GetProperties()
-                                             .Where(pi => pi.GetCustomAttributes(typeof(DbUdttColumnAttribute), false)
-                                                            .Where(ca => onlySoughtUdttName(ca)).Count() > 0))
+                 
+                //foreach (
+                //    var property in typeof(T).GetProperties()
+                //                             .Where(pi => pi.GetCustomAttributes(typeof(DbUdttColumnAttribute), true)
+                //                                            .Where(ca => onlySoughtUdttName(ca)).Count() > 0))
+                var members = typeof(T).GetMembers();
+                foreach(var mi in members)
                 {
-                    var attrA = property.GetCustomAttributes(typeof(DbUdttColumnAttribute), false).Where(ca => onlySoughtUdttName(ca));
-                    if (attrA != null && attrA.Count() > 1)
-                        throw new NotSupportedException("Unexpected condition at section SqlUdtExtensions:GF38NVW"); // means that I found more than one attribute for mapperName
-                    var attr = attrA.FirstOrDefault() as DbUdttColumnAttribute;
-                    if (attr != null && attr.OrdinalPosition == ordinalPositionSought)
+                    foreach(Attribute a in Attribute.GetCustomAttributes(mi, typeof(DbUdttColumnAttribute), true))
                     {
-                        result = property.GetValue(entity);
-                        break; // I'm done: found it
+                        var attrA = a as DbUdttColumnAttribute;
+                        if (attrA != null && attrA.UDTTName.Equals(mapperName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (attrA.OrdinalPosition == ordinalPositionSought)
+                            {
+                                if (mi is System.Reflection.FieldInfo)
+                                {
+                                    result = ((System.Reflection.FieldInfo)mi).GetValue(entity);
+                                    break; // I'm done: found it
+                                }
+                                else if (mi is System.Reflection.PropertyInfo)
+                                {
+                                    result = ((System.Reflection.PropertyInfo)mi).GetValue(entity);
+                                    break; // I'm done: found it
+                                }
+                                else
+                                {
+                                    throw new NotSupportedException(string.Format("Value of {0} is not supported at SqlUdttExtensions.section:GF3F9WEN", mi.GetType().Name));
+                                }
+                            }
+                        }
                     }
                 }
             }

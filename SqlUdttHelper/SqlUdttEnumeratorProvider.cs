@@ -14,18 +14,25 @@ namespace SqlUdttHelper
 
         private SqlUdttEnumeratorProvider() { /*don't let them use parameterless ctor*/ }
 
-        public SqlUdttEnumeratorProvider(T singleItem, string udtNameToUseForMapping)
+        public SqlUdttEnumeratorProvider(T singleItem, string udtNameToUseForMapping)   
         {
+            if (singleItem is System.Collections.ICollection || singleItem is System.Collections.IEnumerable)
+                throw new NotSupportedException("this hsould have resoplved into the other constructor");
+
             _udtNameToUseForMapping = udtNameToUseForMapping;
-            _internalList = new List<T>();
-            _internalList.Add(singleItem);
+            if (!(singleItem is System.Collections.ICollection))
+            {
+                _internalList = new List<T>();
+                _internalList.Add(singleItem);
+            }
         }
 
+        //public SqlUdttEnumeratorProvider(IEnumerable<T> multipleItems, Type a, string udtNameToUseForMapping)
         public SqlUdttEnumeratorProvider(IEnumerable<T> multipleItems, string udtNameToUseForMapping)
         {
             _udtNameToUseForMapping = udtNameToUseForMapping;
-            _internalList = new List<T>();
-            _internalList.AddRange(multipleItems);
+            _internalList = new List<T>(multipleItems);
+            //_internalList.AddRange(multipleItems);
         }
 
         public IEnumerator<Microsoft.SqlServer.Server.SqlDataRecord> GetEnumerator()
@@ -34,12 +41,18 @@ namespace SqlUdttHelper
             
             foreach (T od in _internalList)
             {
-                foreach (var property in GetPropertiesDecoratedWithDbUdtColumnAttribute())
+                foreach (var member in GetPropertiesDecoratedWithDbUdtColumnAttribute())
                 {
-                    var attr = GetAttribute(property);
+                    var attr = GetAttribute(member);
                     if (attr != null)
                     {
-                        object propVal = property.GetValue(od);
+                        object propVal = null;
+                        if (member is System.Reflection.FieldInfo)
+                            propVal = ((System.Reflection.FieldInfo)member).GetValue(od);
+                        else if (member is System.Reflection.PropertyInfo)
+                            propVal = ((System.Reflection.PropertyInfo)member).GetValue(od);
+                        else
+                            throw new NotSupportedException(string.Format("Value of {0} is not supported at SqlUdttEnumeratorProvider.section:5G3089GHRN", member.GetType().Name));
                         if (propVal == null)
                             sdr.SetDBNull(attr.OrdinalPosition);
                         else
@@ -146,12 +159,17 @@ namespace SqlUdttHelper
                         case System.Data.SqlDbType.VarChar:
                             meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType, 1000);
                             break;
+                        case System.Data.SqlDbType.Decimal:
+                            meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType, attr.Precision, attr.Scale);
+                            break;
                         default:
                             meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType);
                             break;
                     }
                     metaL.Add(attr.OrdinalPosition, meta);
                 }
+                else
+                    throw new NotSupportedException(String.Format("Unexpected condition for MemberInfo {0} while looking for UDTT {1} (SqlUdttEnumeratorProvider.section G397RW9)", property.Name, _udtNameToUseForMapping));
             }
 
             // now, some magic:
@@ -177,18 +195,41 @@ namespace SqlUdttHelper
 
         private DbUdttColumnAttribute GetAttribute(System.Reflection.PropertyInfo property)
         {
-            var attrA = property.GetCustomAttributes(typeof(DbUdttColumnAttribute), false).Where(ca => ((DbUdttColumnAttribute)ca).UDTTName == _udtNameToUseForMapping);
+            var attrA = property.GetCustomAttributes(typeof(DbUdttColumnAttribute), true).Where(ca => ((DbUdttColumnAttribute)ca).UDTTName.Equals(_udtNameToUseForMapping, StringComparison.OrdinalIgnoreCase));
             if (attrA != null && attrA.Count() > 1)
                 throw new NotSupportedException("Unexpected condition at section GetSqlDataRecordDef:H39FEOWFI439"); // means that I found more than one attribute for mapperName
             var attr = attrA.FirstOrDefault() as DbUdttColumnAttribute;
             return attr;
         }
 
-        private IEnumerable<System.Reflection.PropertyInfo> GetPropertiesDecoratedWithDbUdtColumnAttribute()
+        private DbUdttColumnAttribute GetAttribute(System.Reflection.MemberInfo member)
         {
-            return typeof(T).GetProperties()
-                                                         .Where(pi => pi.GetCustomAttributes(typeof(DbUdttColumnAttribute), false)
-                                                                        .Where(ca => ((DbUdttColumnAttribute)ca).UDTTName == _udtNameToUseForMapping).Count() > 0);
+            var attrA = Attribute.GetCustomAttributes(member, typeof(DbUdttColumnAttribute), true).Where(ca => ((DbUdttColumnAttribute)ca).UDTTName.Equals(_udtNameToUseForMapping, StringComparison.OrdinalIgnoreCase));
+            if (attrA != null && attrA.Count() > 1)
+                throw new NotSupportedException("Unexpected condition at section GetSqlDataRecordDef:H39FEOWFI439-2"); // means that I found more than one attribute for mapperName
+            var attr = attrA.FirstOrDefault() as DbUdttColumnAttribute;
+            return attr;
+        }
+
+        private IEnumerable<System.Reflection.MemberInfo> GetPropertiesDecoratedWithDbUdtColumnAttribute()
+        {
+            //var ret = typeof(T).GetProperties()
+            //                   .Where(pi => pi.GetCustomAttributes(typeof(DbUdttColumnAttribute), false)
+            //                                  .Where(ca => ((DbUdttColumnAttribute)ca).UDTTName == _udtNameToUseForMapping).Count() > 0);
+            List<System.Reflection.MemberInfo> ret = new List<System.Reflection.MemberInfo>();
+            var members = typeof(T).GetMembers();
+            foreach(var mi in members)
+            {
+                foreach(Attribute a in Attribute.GetCustomAttributes(mi, typeof(DbUdttColumnAttribute), true))
+                {
+                    var dbudttA = a as DbUdttColumnAttribute;
+                    if (dbudttA != null && dbudttA.UDTTName.Equals(_udtNameToUseForMapping, StringComparison.OrdinalIgnoreCase))
+                    {
+                        ret.Add(mi);
+                    }
+                }
+            }
+            return ret;
         }
     }
 }

@@ -40,5 +40,9 @@ namespace SqlUdttHelper
                 return this._typeId;
             }
         }
+
+        public byte Precision { get; set; }
+
+        public byte Scale { get; set; }
     }
 }
