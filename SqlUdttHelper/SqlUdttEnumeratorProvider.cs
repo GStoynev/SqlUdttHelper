@@ -159,6 +159,9 @@ namespace SqlUdttHelper
                         case System.Data.SqlDbType.VarChar:
                             meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType, 1000);
                             break;
+                        case System.Data.SqlDbType.Decimal:
+                            meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType, attr.Precision, attr.Scale);
+                            break;
                         default:
                             meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType);
                             break;
