@@ -418,5 +418,31 @@ namespace SqlUdttHelperTests
 
             Assert.IsNull(sqlDataRecord);
         }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void DecimalWithOnlyScale_Throws()
+        {
+            var arg = new DbUdttColumnAttribute("name", "name2", 0, SqlDbType.Decimal, null, 3);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void DecimalWithOnlyPrecision_Throws()
+        {
+            var arg = new DbUdttColumnAttribute("name", "name2", 0, SqlDbType.Decimal, 3, null);
+        }
+
+        [TestMethod]
+        public void DecimalWith_No_PrecisionAndScale_Works()
+        {
+            var arg = new DbUdttColumnAttribute("name", "name2", 0, SqlDbType.Decimal);
+        }
+
+        [TestMethod]
+        public void DecimalWithPrecisionAndScale_Works()
+        {
+            var arg = new DbUdttColumnAttribute("name", "name2", 0, SqlDbType.Decimal, 3, 1);
+        }
     }
 }

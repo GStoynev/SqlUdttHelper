@@ -13,7 +13,18 @@ namespace SqlUdttHelper
         public string Name { get; private set; }
         public int OrdinalPosition { get; private set; }
         public System.Data.SqlDbType SqlType { get; private set; }
-        public int? Length { get; set; }
+        // TODO: implement
+        public int? Length 
+        { 
+            get
+            {
+                throw new NotImplementedException("Not implemented at section F383947GF");
+            }
+            set
+            {
+                throw new NotImplementedException("Not implemented at section 0F38408F");; 
+            }
+        }
         public byte? Precision { get; set; }
         public byte? Scale { get; set; }
 
@@ -26,10 +37,24 @@ namespace SqlUdttHelper
         /// <param name="Name"></param>
         /// <param name="OrdinalPosition"></param>
         /// <param name="SqlType"></param>
-        /// <param name="length">Optional</param>
+        public DbUdttColumnAttribute(string UDTTName, string Name, int OrdinalPosition, System.Data.SqlDbType SqlType)
+        {
+            this.UDTTName = UDTTName;
+            this.Name = Name;
+            this.OrdinalPosition = OrdinalPosition;
+            this.SqlType = SqlType;
+        }
+
+        /// <summary>
+        /// Defines how the decorated field should map to UDTT specified by the <paramref name="Name"/> parameter
+        /// </summary>
+        /// <param name="UDTTName"></param>
+        /// <param name="Name"></param>
+        /// <param name="OrdinalPosition"></param>
+        /// <param name="SqlType"></param>
         /// <param name="precision">Optional, but always use with <see cref="scale"/></param>
         /// <param name="scale">Optional, but always use with <see cref="precision"/></param>
-        public DbUdttColumnAttribute(string UDTTName, string Name, int OrdinalPosition, System.Data.SqlDbType SqlType, int? length, byte? precision = null, byte? scale = null)
+        public DbUdttColumnAttribute(string UDTTName, string Name, int OrdinalPosition, System.Data.SqlDbType SqlType, byte? precision = null, byte? scale = null)
         {
             if (precision.HasValue ^ scale.HasValue)
             {
@@ -39,6 +64,9 @@ namespace SqlUdttHelper
             this.Name = Name;
             this.OrdinalPosition = OrdinalPosition;
             this.SqlType = SqlType;
+            // TODO: implement 
+            /// <param name="length">Optional</param>
+            //this.Length = length; 
             this.Precision = precision;
             this.Scale = scale;
         }
