@@ -158,7 +158,7 @@ namespace SqlUdttHelper
                         case System.Data.SqlDbType.VarBinary:
                         case System.Data.SqlDbType.VarChar:
                             // TODO: must implement the Length attribute property
-                            meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType, 5000);
+                            meta = new Microsoft.SqlServer.Server.SqlMetaData(attr.Name, attr.SqlType, 4000);
                             break;
                         case System.Data.SqlDbType.Decimal:
                             if (attr.Precision > 0)
